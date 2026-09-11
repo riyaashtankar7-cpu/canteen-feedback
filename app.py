@@ -225,12 +225,27 @@ if st.button("Submit Feedback ✅"):
         st.session_state["submitted"] = True
         st.rerun()
 
-# ---------------------- ADMIN VIEW ----------------------
+# ---------------------- ADMIN VIEW (password protected) ----------------------
 with st.expander("📊 View All Feedback (Admin Only)"):
-    file_path = "feedback_data.csv"
-    if os.path.exists(file_path):
-        df = pd.read_csv(file_path)
-        st.dataframe(df)
-        st.download_button("Download CSV", df.to_csv(index=False), file_name="canteen_feedback.csv")
+    if "admin_authenticated" not in st.session_state:
+        st.session_state["admin_authenticated"] = False
+
+    if not st.session_state["admin_authenticated"]:
+        admin_password_input = st.text_input("Enter admin password", type="password", key="admin_pw_input")
+        if st.button("Unlock"):
+            correct_password = st.secrets.get("admin_password", None)
+            if correct_password is None:
+                st.error("Admin password not set up yet. Add it in Streamlit Cloud's Secrets settings.")
+            elif admin_password_input == correct_password:
+                st.session_state["admin_authenticated"] = True
+                st.rerun()
+            else:
+                st.error("Incorrect password.")
     else:
-        st.info("No feedback has been submitted yet.")
+        file_path = "feedback_data.csv"
+        if os.path.exists(file_path):
+            df = pd.read_csv(file_path)
+            st.dataframe(df)
+            st.download_button("Download CSV", df.to_csv(index=False), file_name="canteen_feedback.csv")
+        else:
+            st.info("No feedback has been submitted yet.")
