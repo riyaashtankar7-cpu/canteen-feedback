@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import os
+import requests  # NEW: used to send each response to Google Sheets
 
 # ---------------------- PAGE CONFIG ----------------------
 st.set_page_config(
@@ -214,6 +215,7 @@ if st.button("Submit Feedback ✅"):
             "Overall Rating": st.session_state.overall + 1,
         }
 
+        # Save 1: local CSV (can get erased on Streamlit Cloud restart)
         file_path = "feedback_data.csv"
         if os.path.exists(file_path):
             df = pd.read_csv(file_path)
@@ -221,6 +223,12 @@ if st.button("Submit Feedback ✅"):
         else:
             df = pd.DataFrame([new_entry])
         df.to_csv(file_path, index=False)
+
+        # Save 2 (NEW): Google Sheet backup -- permanent, never erased
+        try:
+            requests.post(st.secrets["sheet_url"], json=new_entry, timeout=10)
+        except Exception:
+            pass  # even if the sheet is unreachable, the CSV copy is already saved
 
         st.session_state["submitted"] = True
         st.rerun()
